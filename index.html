@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <script>
+    /* Robust Trusted Types shim — MUST be the very first script in <head> */
+    (function () {
+      if (!window.trustedTypes) return;
+      function ensurePolicy(name) {
+        try {
+          const names = window.trustedTypes.getPolicyNames && window.trustedTypes.getPolicyNames();
+          if (names && names.includes(name)) return window.trustedTypes.getPolicy(name);
+          return window.trustedTypes.createPolicy(name, {
+            createScriptURL: (url) => {
+              if (typeof url !== 'string') throw new Error('Not a string URL');
+              if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+              const u = new URL(url, location.href);
+              const allowed = new Set([
+                location.origin,
+                'https://accounts.google.com',
+                'https://apis.google.com',
+                'https://cdn.tailwindcss.com',
+                'https://aistudiocdn.com',
+                'https://esm.sh',
+                'https://voyageur-1.onrender.com',
+                'https://checkout.razorpay.com',
+                'https://maps.googleapis.com',
+                'https://maps.gstatic.com'
+              ]);
+
+              if (allowed.has(u.origin) || u.origin.endsWith('.supabase.co')) return url;
+
+              throw new Error('Blocked origin: ' + u.origin);
+              return url;
+            }
+          });
+        } catch (e) {
+          return null;
+        }
+      }
+      const policy = ensurePolicy('default') || ensurePolicy('trusted_policy');
+      function toTrustedScriptURL(val) {
+        if (!policy || typeof val !== 'string') return val;
+        try { return policy.createScriptURL(val); } catch (err) { throw err; }
+      }
+      try {
+        const desc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+        if (desc && desc.set) {
+          Object.defineProperty(HTMLScriptElement.prototype, 'src', {
+            configurable: true,
+            enumerable: desc.enumerable,
+            get: desc.get,
+            set: function (v) {
+              return desc.set.call(this, (typeof v === 'string') ? toTrustedScriptURL(v) : v);
+            }
+          });
+        }
+      } catch (e) { }
+      try {
+        const origSet = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function (name, value) {
+          if (this.tagName === 'SCRIPT' && String(name).toLowerCase() === 'src' && typeof value === 'string') {
+            return origSet.call(this, name, toTrustedScriptURL(value));
+          }
+          return origSet.call(this, name, value);
+        };
+      } catch (e) { }
+    })();
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voyageur | Precision Travel</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #000000;
+      color: #f8fafc;
+      overflow-x: hidden;
+      overflow-y: visible !important;
+      /* Prevent body from scrolling */
+      height: auto !important;
+      /* Ensure body grows */
+      width: 100vw;
+      /* Prevent x-overflow */
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html {
+      overflow-y: auto;
+      /* Allow window scroll */
+      overflow-x: hidden;
+      height: 100%;
+    }
+
+    /* Force Root to behave */
+    #root {
+      height: auto !important;
+      overflow: visible !important;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* --- MOBILE PERFORMANCE OPTIMIZATIONS --- */
+    @media screen and (max-width: 768px) {
+
+      /* Force Hardware Acceleration on glass elements */
+      .backdrop-blur-xl,
+      .backdrop-blur-lg,
+      .backdrop-blur-md,
+      [class*="backdrop-blur"] {
+        will-change: backdrop-filter;
+        transform: translateZ(0);
+        /* Trigger GPU */
+
+        /* CRITICAL: Cap blur radius to 4px on mobile (vs 12-24px on desktop) 
+           * This saves ~80% GPU fill-rate on budget chips like Helio G35 */
+        --tw-backdrop-blur: blur(4px) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+
+        /* Compensate for less blur by making background slightly darker/opaque */
+        /* FIX: Reduced opacity to 0.4 to restore translucency while keeping performance */
+        background-color: rgba(0, 0, 0, 0.4) !important;
+      }
+
+      /* Disable heavy box-shadows on mobile */
+      [class*="shadow-"] {
+        box-shadow: none !important;
+        text-shadow: none !important;
+      }
+
+      /* Disable 3D transforms on lists/grids to save memory */
+      .group:hover .group-hover\:scale-110 {
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root">
+    <div style="min-height: 100vh; background: #000;"></div>
+  </div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
